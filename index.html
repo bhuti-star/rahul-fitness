@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Strength Training Dashboard</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💪🏾</text></svg>'>
+
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --card2:#1e222b; --line:#2a2f3a;
+    --text:#e8eaed; --muted:#9aa3b2; --accent:#4f9cff; --accent2:#36c08b;
+    --gold:#f2c14e; --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:680px; margin:0 auto; padding:18px 16px 60px;}
+  header{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:18px;}
+  header h1{font-size:17px; margin:0; letter-spacing:.2px; line-height:1.25; max-width:62%;}
+  .hdr-right{text-align:right; flex-shrink:0;}
+  header .date{font-size:12px; color:var(--muted);}
+  .gstatus{font-size:12px; font-weight:700; color:var(--accent); margin-top:3px;}
+  .gstatus.today{color:var(--accent2);}
+  /* Landing screen */
+  #landing{min-height:70vh; display:flex; align-items:center; justify-content:center;}
+  .landing-inner{text-align:center; width:100%;}
+  .landing-title{font-size:24px; margin:0 0 30px; line-height:1.3;}
+  .landing-actions{display:flex; flex-direction:column; gap:14px; max-width:430px; margin:0 auto;}
+  .bigbtn{width:100%; padding:18px; font-size:18px; font-weight:800; border:none; border-radius:14px; color:#06231a; background:var(--accent2); cursor:pointer;}
+  .bigbtn.ghost{background:var(--card2); color:var(--text); border:1px solid var(--line); font-weight:500;}
+  .bigbtn:active{transform:translateY(1px);}
+  .backlink{display:inline-block; font-size:12px; color:var(--accent); text-decoration:none; margin-bottom:12px;}
+  @media (max-width:420px){ .landing-title{font-size:21px;} .bigbtn{font-size:16px; padding:16px;} }
+  label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px; text-transform:uppercase; letter-spacing:.6px;}
+  select,input{
+    width:100%; padding:13px 14px; font-size:16px; color:var(--text);
+    background:var(--card2); border:1px solid var(--line); border-radius:12px; outline:none;
+  }
+  select:focus,input:focus{border-color:var(--accent)}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-top:16px;}
+  .card h2{margin:0 0 12px; font-size:13px; letter-spacing:.6px; text-transform:uppercase; color:var(--muted);}
+  .pb h2{color:var(--gold)}
+  table{width:100%; border-collapse:collapse; font-size:15px;}
+  th,td{text-align:left; padding:9px 8px; border-bottom:1px solid var(--line);}
+  th{font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); font-weight:600;}
+  td:last-child,th:last-child{text-align:right}
+  tr:last-child td{border-bottom:none}
+  .sub{font-size:12px; color:var(--muted); margin:-4px 0 12px;}
+  .pbrow{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+  .pbrow .big{font-size:30px; font-weight:700; color:var(--gold)}
+  .pbrow .x{font-size:18px; color:var(--text)}
+  .pbrow .when{font-size:12px; color:var(--muted); margin-left:auto}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .entry .row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .entry .full{grid-column:1 / -1}
+  button{
+    width:100%; margin-top:14px; padding:15px; font-size:16px; font-weight:700;
+    color:#06231a; background:var(--accent2); border:none; border-radius:12px; cursor:pointer;
+  }
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:.5; cursor:default}
+  .combo{position:relative;}
+  .suggestions{position:absolute; left:0; right:0; top:100%; z-index:20; margin-top:4px;
+    background:var(--card2); border:1px solid var(--line); border-radius:12px; max-height:300px;
+    overflow-y:auto; box-shadow:0 12px 32px rgba(0,0,0,.45);}
+  .suggestions .opt{padding:12px 14px; cursor:pointer; font-size:15px; border-bottom:1px solid var(--line);}
+  .suggestions .opt:last-child{border-bottom:none;}
+  .suggestions .opt.active, .suggestions .opt:hover{background:var(--card);}
+  .suggestions .opt.add{color:var(--accent2); font-weight:700;}
+  .suggestions .none{padding:12px 14px; color:var(--muted); font-size:14px;}
+  .addrow{display:flex; gap:8px; margin-top:8px;}
+  button.mini{width:auto; flex:1; margin-top:0; padding:11px 14px; font-size:14px;}
+  button.ghost{background:var(--card2); color:var(--text); border:1px solid var(--line);}
+  .toast{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px);
+    background:var(--accent2); color:#06231a; font-weight:700; padding:12px 20px; border-radius:30px;
+    opacity:0; pointer-events:none; transition:.25s; box-shadow:0 8px 24px rgba(0,0,0,.4); z-index:9;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  .toast.err{background:var(--danger); color:#2a0606}
+  .muted{color:var(--muted)}
+  .today td:last-child, .today th:last-child{text-align:left}
+  .today td:nth-child(2), .today td:nth-child(3),
+  .today th:nth-child(2), .today th:nth-child(3){text-align:right}
+  .sessionblock + .sessionblock{margin-top:14px; padding-top:12px; border-top:1px solid var(--line);}
+  .empty{color:var(--muted); font-size:14px; padding:6px 2px;}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (max-width:420px){
+    .pbrow .big{font-size:26px}
+    th,td{padding:8px 6px; font-size:14px}
+  }
+  /* Collapsed "log date" control */
+  .logdate{display:flex; align-items:center; gap:8px; margin-top:14px; font-size:13px; color:var(--muted);}
+  .logdate a{color:var(--accent); text-decoration:none; font-size:12px;}
+  .logdate-input{width:auto; padding:8px 10px; font-size:14px; margin-left:auto;}
+  /* Tappable rows in Today's Workout */
+  .today tbody tr.editable{cursor:pointer}
+  .today tbody tr.editable:hover{background:var(--card2)}
+  .edithint{font-size:11px; color:var(--muted); margin:8px 2px 0;}
+  /* Edit modal */
+  .modal{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:50;
+    display:flex; align-items:flex-end; justify-content:center;}
+  .modal-card{background:var(--card); border:1px solid var(--line);
+    border-top-left-radius:18px; border-top-right-radius:18px;
+    width:100%; max-width:680px; padding:18px 16px 24px; max-height:92vh; overflow-y:auto;}
+  .modal-card h2{margin:0 0 2px; font-size:15px; text-transform:none; letter-spacing:0; color:var(--text);}
+  .modal-card .row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .modal-card .full{grid-column:1 / -1;}
+  .btn-danger{background:var(--danger); color:#2a0606;}
+  @media (min-width:560px){
+    .modal{align-items:center; padding:16px;}
+    .modal-card{border-radius:18px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- LANDING SCREEN -->
+  <div id="landing">
+    <div class="landing-inner">
+      <h1 class="landing-title">Rahul's Strength Training Dashboard</h1>
+      <div class="landing-actions">
+        <button id="primaryGroupBtn" class="bigbtn">Loading…</button>
+        <button id="secondaryGroupBtn" class="bigbtn ghost"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="app" style="display:none">
+
+  <a href="#" id="changeGroup" class="backlink">‹ Change group</a>
+
+  <header>
+    <h1>Rahul's Strength Training Dashboard</h1>
+    <div class="hdr-right">
+      <div class="date" id="today"></div>
+      <div class="gstatus" id="groupStatus"></div>
+    </div>
+  </header>
+
+  <!-- Exercise picker (type to search) -->
+  <label for="exerciseInput">Select exercise</label>
+  <div class="combo">
+    <input id="exerciseInput" type="text" autocomplete="off" placeholder="Type to search exercises…" />
+    <div id="exerciseSuggestions" class="suggestions" style="display:none"></div>
+  </div>
+
+  <!-- Inline "add new exercise" box (hidden until "Add new exercise…" is picked) -->
+  <div id="addExWrap" style="display:none; margin-top:10px;">
+    <div class="combo">
+      <input id="newExName" type="text" placeholder="New exercise name" autocomplete="off" />
+      <div id="newExSuggestions" class="suggestions" style="display:none"></div>
+    </div>
+    <div style="margin-top:8px;">
+      <label for="newExScope">Belongs to</label>
+      <select id="newExScope">
+        <option value="group">This group only</option>
+        <option value="both">Both (Group A &amp; Group B)</option>
+      </select>
+    </div>
+    <div class="addrow">
+      <button id="addExBtn" class="mini">Add to list</button>
+      <button id="addExCancel" class="mini ghost">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Last 2 Sessions -->
+  <div class="card" id="lastCard" style="display:none">
+    <h2>Last 2 Sessions</h2>
+    <div id="lastSessions"></div>
+  </div>
+
+  <!-- Personal Best -->
+  <div class="card pb" id="pbCard" style="display:none">
+    <h2>All-Time Personal Best</h2>
+    <div class="pbrow">
+      <span class="big" id="pbWeight">—</span>
+      <span class="x" id="pbReps"></span>
+      <span class="when" id="pbDate"></span>
+    </div>
+  </div>
+
+  <!-- Data entry -->
+  <div class="card entry" id="entryCard" style="display:none">
+    <h2>Log a Set</h2>
+    <div class="row">
+      <div>
+        <label for="weight">Weight (KG)</label>
+        <input id="weight" type="number" inputmode="decimal" step="0.5" placeholder="e.g. 32.5" />
+      </div>
+      <div>
+        <label for="reps">Reps</label>
+        <input id="reps" type="number" inputmode="numeric" step="1" placeholder="e.g. 6" />
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div>
+        <label for="group">Group (optional)</label>
+        <select id="group">
+          <option value="">— none —</option>
+          <option>Group A</option>
+          <option>Group B</option>
+        </select>
+      </div>
+      <div>
+        <label for="intensity">Intensity (optional)</label>
+        <select id="intensity">
+          <option value="">— none —</option>
+          <option>Working Set</option>
+          <option>Prep Set</option>
+          <option>Cheat Set</option>
+          <option>Rest Set</option>
+          <option>Drop Set</option>
+          <option>Force Set</option>
+          <option>1RM</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div class="full">
+        <label for="notes">Notes (optional)</label>
+        <input id="notes" type="text" autocomplete="off" placeholder="e.g. Sec. 104, SNU, Smith Machine" />
+      </div>
+    </div>
+    <div class="logdate">
+      <span>Date: <b id="logDateLabel">Today</b></span>
+      <a href="#" id="changeLogDate">Change</a>
+      <input id="logDate" type="date" class="logdate-input" style="display:none" />
+    </div>
+    <button id="saveBtn">Save set</button>
+  </div>
+
+  <!-- Today's Workout -->
+  <div class="card today" id="todayCard" style="display:none">
+    <h2 id="todayTitle">Today's Workout</h2>
+    <table>
+      <thead><tr><th>Exercise</th><th>KG</th><th>Reps</th><th>Intensity / Notes</th></tr></thead>
+      <tbody id="todayBody"></tbody>
+    </table>
+    <p class="edithint">Tap a row to edit or delete it.</p>
+  </div>
+
+  <p class="empty" id="placeholder">Pick an exercise to see your last session and personal best.</p>
+
+  </div><!-- /#app -->
+
+</div>
+
+<!-- EDIT SET MODAL -->
+<div class="modal" id="editModal" style="display:none">
+  <div class="modal-card">
+    <h2>Edit set</h2>
+    <div class="sub" id="editExercise" style="margin-bottom:14px"></div>
+    <div class="row">
+      <div>
+        <label for="editWeight">Weight (KG)</label>
+        <input id="editWeight" type="number" inputmode="decimal" step="0.5" />
+      </div>
+      <div>
+        <label for="editReps">Reps</label>
+        <input id="editReps" type="number" inputmode="numeric" step="1" />
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div>
+        <label for="editGroup">Group</label>
+        <select id="editGroup">
+          <option value="">— none —</option>
+          <option>Group A</option>
+          <option>Group B</option>
+        </select>
+      </div>
+      <div>
+        <label for="editIntensity">Intensity</label>
+        <select id="editIntensity">
+          <option value="">— none —</option>
+          <option>Working Set</option>
+          <option>Prep Set</option>
+          <option>Cheat Set</option>
+          <option>Rest Set</option>
+          <option>Drop Set</option>
+          <option>Forced Set</option>
+          <option>1RM</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div class="full">
+        <label for="editDate">Date</label>
+        <input id="editDate" type="date" />
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div class="full">
+        <label for="editNotes">Notes</label>
+        <input id="editNotes" type="text" autocomplete="off" />
+      </div>
+    </div>
+    <button id="editSaveBtn">Save changes</button>
+    <div class="addrow">
+      <button id="editDeleteBtn" class="mini btn-danger">Delete set</button>
+      <button id="editCancelBtn" class="mini ghost">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ======================================================================
+   CONFIG — paste your Apps Script Web App URL between the quotes below.
+   It looks like: https://script.google.com/macros/s/AKfy..../exec
+   ====================================================================== */
+const API_URL = "https://script.google.com/macros/s/AKfycbzkftW9e80drU5xVNqSBFNsvPZfTVvH3sFwyOV379Gr2cK-4ext0tCqX7snxbtqkV1IeQ/exec";  
+
+/* The exercise dropdown list. Add or remove names here any time. */
+const EXERCISES = [
+  "Assisted Pull Ups","Assisted Push Ups","Back Squats","Barbell Flat Bench Press",
+  "Barbell Push Press","Barbell Shrugs","Barbell Strict Press","Cable Seated Shrugs",
+  "Cable Shrugs","Calf Raises","Deadlift","Dumbbell Bent Over Row","Dumbbell Bicep Supination",
+  "Dumbbell Flat Bench Press","Dumbbell Incline Press","Dumbbell Lateral Raise",
+  "Dumbbell Pronated High Row","Dumbbell Pronated Shrugs","Dumbbell Push Press",
+  "Dumbbell Shrugs","Dumbbell Strict Press","Front Squats","Hamstring Curl","Lat Pull Down",
+  "Lunges","Overhead Squats","Pulley Push Down","Push Ups","Seated Row"
+];
+
+/* Exercises per group, in the usual order they're performed in a session. */
+const GROUP_EXERCISES = {
+  "Group A": [
+    "Back Squats","Front Squats","Overhead Squats","Barbell Strict Press",
+    "Barbell Flat Bench Press","Barbell Shrugs","Dumbbell Bent Over Row",
+    "Dumbbell Pronated High Row","Dumbbell Lateral Raise","Pulley Push Down"
+  ],
+  "Group B": [
+    "Deadlift","Lunges","Calf Raises","Hamstring Curl","Lat Pull Down","Cable Shrugs",
+    "Dumbbell Flat Bench Press","Dumbbell Lateral Raise","Dumbbell Strict Press",
+    "Dumbbell Pronated High Row","Seated Row"
+  ]
+};
+
+/* ---- elements ---- */
+const $ = id => document.getElementById(id);
+const exInput = $("exerciseInput"), sugg = $("exerciseSuggestions"),
+      lastCard = $("lastCard"), pbCard = $("pbCard"),
+      todayCard = $("todayCard"), todayBody = $("todayBody"),
+      entryCard = $("entryCard"), placeholder = $("placeholder"),
+      lastSessionsEl = $("lastSessions"),
+      pbWeight = $("pbWeight"), pbReps = $("pbReps"), pbDate = $("pbDate"),
+      groupStatusEl = $("groupStatus"),
+      saveBtn = $("saveBtn"), toast = $("toast");
+
+/* ---- init ---- */
+let initData = null;        // cached backend response from page load
+let currentGroup = null;    // "Group A" / "Group B" once chosen on the landing screen
+let allExercises = [];       // live list of names from the sheet's Exercises tab
+let exerciseGroups = {};     // name -> "Group A"/"Group B", derived from logged data (backend)
+let currentList = [];        // exercises shown in the search box (current group, in order)
+let activeIdx = -1;          // highlighted suggestion for keyboard nav
+
+$("today").textContent = new Date().toLocaleDateString("en-GB",
+  { day:"2-digit", month:"short", year:"numeric" });
+
+// Searchable exercise box
+exInput.addEventListener("input", renderSuggestions);
+exInput.addEventListener("focus", renderSuggestions);
+exInput.addEventListener("keydown", onSearchKey);
+sugg.addEventListener("mousedown", onSuggestionClick);   // mousedown so it fires before blur
+document.addEventListener("click", e => { if(!e.target.closest(".combo")) hideSuggestions(); });
+
+saveBtn.addEventListener("click", saveSet);
+$("addExBtn").addEventListener("click", addExercise);
+$("addExCancel").addEventListener("click", hideAddBox);
+$("newExName").addEventListener("keydown", e => { if(e.key === "Enter") addExercise(); });
+// Type-ahead for the "New exercise name" box: catalog exercises not already in this group.
+$("newExName").addEventListener("input", renderAddSuggestions);
+$("newExName").addEventListener("focus", renderAddSuggestions);
+$("newExSuggestions").addEventListener("mousedown", e => {
+  const opt = e.target.closest(".opt");
+  if(!opt || !opt.dataset.name) return;
+  e.preventDefault();
+  $("newExName").value = opt.dataset.name;
+  hideAddSuggestions();
+});
+document.addEventListener("click", e => { if(!e.target.closest("#addExWrap")) hideAddSuggestions(); });
+
+// Landing screen buttons
+$("primaryGroupBtn").addEventListener("click", () => enterDashboard($("primaryGroupBtn").dataset.group));
+$("secondaryGroupBtn").addEventListener("click", () => enterDashboard($("secondaryGroupBtn").dataset.group));
+$("changeGroup").addEventListener("click", e => { e.preventDefault(); backToLanding(); });
+
+loadInit();   // pull group status + exercise list, then show the landing buttons
+
+/* ---- landing screen ---- */
+function renderLanding(s){
+  // Recommend the opposite of the most recent prior-day group.
+  const last = (s && s.last) || "";
+  let recommended, other;
+  if(last === "Group A"){ recommended = "Group B"; other = "Group A"; }
+  else if(last === "Group B"){ recommended = "Group A"; other = "Group B"; }
+  else { recommended = "Group A"; other = "Group B"; }   // no history yet
+  const p = $("primaryGroupBtn"), sec = $("secondaryGroupBtn");
+  p.textContent = "Today's Workout: " + recommended; p.dataset.group = recommended;
+  sec.textContent = "No, let's do " + other;          sec.dataset.group = other;
+}
+
+function enterDashboard(group){
+  if(!group) return;
+  currentGroup = group;
+  $("landing").style.display = "none";
+  $("app").style.display = "block";
+  populateExercises(orderedGroupList(group));   // group's exercises, synced with the sheet, in order
+  $("group").value = group;                     // pre-tag new sets with the chosen group
+  if(initData){
+    if(initData.groupStatus) renderStatus(initData.groupStatus);
+    renderToday(initData.todayWorkout);
+  }
+}
+
+/* Build the dropdown list for a group:
+   - membership: each exercise's group is derived from the logged data (backend);
+     if an exercise has no A/B history yet, fall back to the manual GROUP_EXERCISES guide.
+   - order: the manual guide first (as a hint), then any remaining members alphabetically.
+   - source of names: the live Exercises tab, so added/edited exercises persist. */
+function orderedGroupList(group){
+  const guide = GROUP_EXERCISES[group] || [];
+  if(!allExercises.length) return guide.slice();           // offline fallback
+  const inGroup = name => {
+    const g = exerciseGroups[name];   // array of groups this exercise belongs to (can be both)
+    return (Array.isArray(g) && g.length) ? g.includes(group) : guide.includes(name);
+  };
+  const members = allExercises.filter(inGroup);
+  const inGuideOrder = guide.filter(n => members.includes(n));
+  const rest = members.filter(n => !guide.includes(n))
+                      .sort((a,b) => a.toLowerCase() < b.toLowerCase() ? -1 : 1);
+  return [...inGuideOrder, ...rest];
+}
+
+function backToLanding(){
+  $("app").style.display = "none";
+  $("landing").style.display = "block";
+  // reset the dashboard view
+  placeholder.style.display = "block";
+  lastCard.style.display = pbCard.style.display = entryCard.style.display = "none";
+  exInput.value = ""; hideSuggestions(); hideAddBox();
+}
+
+/* ---- searchable exercise box ---- */
+// Set the list of exercises the search box draws from (current group, in order).
+function populateExercises(list, selectVal){
+  currentList = list.slice();
+  exInput.value = selectVal || "";
+  hideSuggestions();
+}
+
+// Render the filtered suggestions as the user types (substring match, anywhere in the name).
+function renderSuggestions(){
+  const q = exInput.value.trim().toLowerCase();
+  const matches = currentList.filter(n => n.toLowerCase().includes(q));
+  let html = matches.length
+    ? matches.map(n => `<div class="opt" data-name="${esc(n)}">${esc(n)}</div>`).join("")
+    : `<div class="none">No match${q ? ` for "${esc(exInput.value.trim())}"` : ""}</div>`;
+  html += `<div class="opt add" data-add="1">➕  Add new exercise…</div>`;
+  sugg.innerHTML = html;
+  sugg.style.display = "block";
+  activeIdx = -1;
+}
+function hideSuggestions(){ sugg.style.display = "none"; activeIdx = -1; }
+
+function onSuggestionClick(e){
+  const opt = e.target.closest(".opt");
+  if(!opt) return;
+  e.preventDefault();
+  if(opt.dataset.add){ showAddBox(); return; }
+  if(opt.dataset.name) chooseExercise(opt.dataset.name);
+}
+
+function chooseExercise(name){
+  exInput.value = name;
+  hideSuggestions();
+  hideAddBox();
+  loadExercise(name);
+}
+
+// Keyboard: arrows move the highlight, Enter picks it, Escape closes.
+function onSearchKey(e){
+  const opts = [...sugg.querySelectorAll(".opt")];
+  if(e.key === "ArrowDown"){ e.preventDefault(); if(sugg.style.display==="none") renderSuggestions(); activeIdx = Math.min(activeIdx+1, opts.length-1); paintActive(opts); }
+  else if(e.key === "ArrowUp"){ e.preventDefault(); activeIdx = Math.max(activeIdx-1, 0); paintActive(opts); }
+  else if(e.key === "Enter"){
+    e.preventDefault();
+    if(activeIdx >= 0 && opts[activeIdx]) opts[activeIdx].dispatchEvent(new MouseEvent("mousedown", {bubbles:true}));
+    else { const first = sugg.querySelector(".opt[data-name]"); if(first) chooseExercise(first.dataset.name); }
+  }
+  else if(e.key === "Escape"){ hideSuggestions(); }
+}
+function paintActive(opts){
+  opts.forEach((o,i) => o.classList.toggle("active", i === activeIdx));
+  if(opts[activeIdx]) opts[activeIdx].scrollIntoView({block:"nearest"});
+}
+
+function showAddBox(){
+  $("addExWrap").style.display = "block";
+  $("newExName").value = exInput.value.trim();
+  // Label the first option with the current group, e.g. "Group A only".
+  const onlyOpt = $("newExScope").querySelector('option[value="group"]');
+  if(onlyOpt) onlyOpt.textContent = (currentGroup || "This group") + " only";
+  $("newExScope").value = "group";
+  $("newExName").focus();
+  hideSuggestions();
+  renderAddSuggestions();
+}
+function hideAddBox(){ $("addExWrap").style.display = "none"; hideAddSuggestions(); }
+
+/* Exercises from the catalog that are NOT already tagged to the current group.
+   Source: the live Exercises tab (mirrors Rahul-Workout-Dataset.xlsx),
+   falling back to the built-in list if the sheet's catalog isn't loaded. */
+function addCandidates(){
+  const catalog = allExercises.length ? allExercises : EXERCISES;
+  const seen = {};
+  return catalog.filter(name => {
+    const key = String(name).toLowerCase();
+    if(seen[key]) return false; seen[key] = 1;          // de-dupe
+    const g = exerciseGroups[name];                     // groups this exercise belongs to
+    const inThisGroup = Array.isArray(g) && g.includes(currentGroup);
+    return !inThisGroup;                                // hide ones already in this group
+  }).sort((a,b) => a.toLowerCase() < b.toLowerCase() ? -1 : 1);
+}
+
+/* Show matching catalog exercises (substring match, anywhere in the name). */
+function renderAddSuggestions(){
+  const q = $("newExName").value.trim().toLowerCase();
+  const matches = addCandidates().filter(n => n.toLowerCase().includes(q));
+  if(!matches.length){ hideAddSuggestions(); return; }  // no catalog match -> free text only
+  $("newExSuggestions").innerHTML = matches.map(n => `<div class="opt" data-name="${esc(n)}">${esc(n)}</div>`).join("");
+  $("newExSuggestions").style.display = "block";
+}
+function hideAddSuggestions(){ $("newExSuggestions").style.display = "none"; }
+
+/* ---- add a new exercise to the backend list ---- */
+async function addExercise(){
+  const name = $("newExName").value.trim();
+  if(!name){ showToast("Type a name first", true); return; }
+  const btn = $("addExBtn"); btn.disabled = true; btn.textContent = "Adding…";
+  try{
+    // send the chosen group + "both" flag so the exercise is tagged in the right dropdown(s)
+    const both = ($("newExScope") && $("newExScope").value === "both");
+    const r = await fetch(API_URL, { method:"POST", body: JSON.stringify({ action:"addExercise", exercise:name, group: currentGroup || "", both: both }) });
+    const textBody = await r.text();          // read raw first so we can see non-JSON replies
+    let j;
+    try { j = JSON.parse(textBody); }
+    catch(e){ throw new Error("Server sent non-JSON: " + textBody.slice(0, 90)); }
+    if(!j.ok) throw new Error(j.error || "Server returned ok:false");
+    if(j.exercises) allExercises = j.exercises;            // refresh from the sheet
+    if(j.exerciseGroups) exerciseGroups = j.exerciseGroups;
+    const list = currentGroup ? orderedGroupList(currentGroup) : allExercises;
+    if(!list.includes(name)) list.push(name);             // safety net
+    populateExercises(list, name);
+    hideAddBox();
+    showToast("Added ✓");
+    loadExercise(name);                     // show its (empty) cards, ready to log
+  }catch(err){
+    showToast("Add failed: " + err.message, true);
+    console.error("Add exercise error:", err);
+  }finally{
+    btn.disabled = false; btn.textContent = "Add to list";
+  }
+}
+
+/* ---- pull group status + data on page load, then show landing buttons ---- */
+async function loadInit(){
+  try{
+    const r = await fetch(API_URL);
+    const j = await r.json();
+    if(j.ok){
+      initData = j;
+      allExercises = j.exercises || [];
+      exerciseGroups = j.exerciseGroups || {};
+      renderLanding(j.groupStatus);
+    } else {
+      renderLanding(null);
+    }
+  }catch(err){
+    renderLanding(null);   // offline: still let the user pick a group
+  }
+}
+function renderStatus(s){
+  // Recommend the opposite of the most recent PAST-day group.
+  if(s && s.last){
+    const todayGroup = s.last === "Group A" ? "Group B" : "Group A";
+    groupStatusEl.textContent = "Today: " + todayGroup;
+    groupStatusEl.className = "gstatus today";
+  } else {
+    groupStatusEl.textContent = "";
+  }
+}
+
+/* ---- show toast ---- */
+let toastTimer;
+function showToast(msg, isErr){
+  toast.textContent = msg;
+  toast.className = "toast show" + (isErr ? " err" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toast.className = "toast", isErr ? 7000 : 2200);
+}
+
+/* ---- load summary for an exercise ---- */
+async function loadExercise(name){
+  if(!name) return;
+  placeholder.style.display = "none";
+  lastCard.style.display = pbCard.style.display = entryCard.style.display = "block";
+  lastSessionsEl.innerHTML = '<div class="sub"><span class="spinner"></span>Loading…</div>';
+  pbWeight.textContent = "…"; pbReps.textContent = ""; pbDate.textContent = "";
+  try{
+    const r = await fetch(API_URL + "?exercise=" + encodeURIComponent(name) + "&workoutDate=" + encodeURIComponent(boxDate()));
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error || "Server error");
+    render(j.lastSessions, j.personalBest);
+    if(j.groupStatus) renderStatus(j.groupStatus);
+    renderToday(j.dayWorkout || j.todayWorkout);
+  }catch(err){
+    lastSessionsEl.innerHTML = '<div class="sub">Couldn\'t load data.</div>';
+    showToast("Couldn't reach the server", true);
+  }
+}
+
+function render(sessions, pb){
+  renderSessions(sessions);
+  // Personal best
+  if(pb && pb.weight !== undefined && pb.weight !== ""){
+    pbWeight.textContent = pb.weight + " KG";
+    pbReps.textContent = pb.reps !== "" ? "× " + pb.reps + " reps" : "";
+    pbDate.textContent = pb.date || "";
+  } else {
+    pbWeight.textContent = "—"; pbReps.textContent = ""; pbDate.textContent = "";
+  }
+}
+
+function renderSessions(sessions){
+  if(!sessions || !sessions.length){
+    lastSessionsEl.innerHTML = '<div class="sub">No sessions logged yet.</div>';
+    return;
+  }
+  lastSessionsEl.innerHTML = sessions.map(s => {
+    const rows = s.sets.map((set,i) => {
+      const vol = (typeof set.weight==="number" && typeof set.reps==="number") ? (set.weight*set.reps) : "—";
+      const note = [set.intensity, set.notes].filter(Boolean).join("; ");
+      return `<tr><td>${i+1}</td><td>${set.weight}</td><td>${set.reps}</td><td>${vol}</td><td>${esc(note) || "—"}</td></tr>`;
+    }).join("");
+    return `<div class="sessionblock">
+      <div class="sub">${esc(s.date)}${s.group ? "  ·  " + esc(s.group) : ""}</div>
+      <table>
+        <thead><tr><th>#</th><th>Weight (KG)</th><th>Reps</th><th>KG × Reps</th><th>Intensity / Notes</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join("");
+}
+
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// Render the workout box for the currently-selected date (today or a back-dated day).
+function renderToday(list){
+  todayList = list || [];
+  const iso = boxDate();
+  const isToday = (iso === todayISO());
+  $("todayTitle").textContent = boxTitle(iso);
+  // When viewing today with nothing logged, hide the box (as before).
+  if(!todayList.length && isToday){ todayCard.style.display = "none"; return; }
+  todayCard.style.display = "block";
+  if(!todayList.length){
+    // A back-dated day with nothing yet — show the labelled, empty box.
+    todayBody.innerHTML = `<tr><td colspan="4" class="muted" style="text-align:left; padding:10px 8px">No sets logged for this day yet.</td></tr>`;
+    return;
+  }
+  todayBody.innerHTML = todayList.map((r, idx) => {
+    const note = [r.intensity, r.notes].filter(Boolean).join("; ");
+    return `<tr class="editable" data-idx="${idx}"><td>${esc(r.exercise)}</td><td>${r.weight}</td><td>${r.reps}</td><td>${esc(note) || "—"}</td></tr>`;
+  }).join("");
+}
+
+/* ---- save a new set ---- */
+async function saveSet(){
+  const exercise = exInput.value.trim();
+  const weight = parseFloat($("weight").value);
+  const reps = parseInt($("reps").value, 10);
+  const group = $("group").value;
+  const intensity = $("intensity").value;
+  const notes = $("notes").value.trim();
+  const date = $("logDate").value || todayISO();
+
+  if(!exercise){ showToast("Pick an exercise first", true); return; }
+  if(isNaN(weight)){ showToast("Enter a weight", true); return; }
+  if(isNaN(reps)){ showToast("Enter reps", true); return; }
+
+  // ---- optimistic update: reflect the set instantly, before the server replies ----
+  // (only if it's being logged for today; back-dated sets won't appear in Today's Workout)
+  if(date === todayISO()) appendTodayRow({ exercise, weight, reps, intensity, notes });
+  showToast("Saved ✓");
+  $("weight").value = ""; $("reps").value = ""; $("notes").value = "";
+  saveBtn.disabled = true; saveBtn.textContent = "Saving…";
+
+  try{
+    // No custom Content-Type header -> avoids a CORS preflight to Apps Script.
+    const r = await fetch(API_URL, {
+      method:"POST",
+      body: JSON.stringify({ exercise, weight, reps, group, intensity, notes, date, workoutDate: date })
+    });
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error || "Server error");
+    // reconcile with the authoritative numbers from the server
+    render(j.lastSessions, j.personalBest);
+    if(j.groupStatus) renderStatus(j.groupStatus);
+    renderToday(j.dayWorkout || j.todayWorkout);
+  }catch(err){
+    showToast("Save failed — not recorded. Please try again", true);
+    loadExercise(exercise);   // re-sync from the server (removes the optimistic row)
+  }finally{
+    saveBtn.disabled = false; saveBtn.textContent = "Save set";
+  }
+}
+
+/* Add a row to Today's Workout immediately (before the server confirms). */
+function appendTodayRow(r){
+  todayCard.style.display = "block";
+  // Clear the "no sets yet" placeholder if it's showing.
+  if(!todayList.length && todayBody.querySelector("td[colspan]")) todayBody.innerHTML = "";
+  const note = [r.intensity, r.notes].filter(Boolean).join("; ");
+  // Not tagged "editable" — it has no server ID yet; becomes editable after refresh.
+  todayBody.insertAdjacentHTML("beforeend",
+    `<tr><td>${esc(r.exercise)}</td><td>${r.weight}</td><td>${r.reps}</td><td>${esc(note) || "—"}</td></tr>`);
+}
+
+/* ======================================================================
+   Editable log-date + edit/delete a logged set
+   ====================================================================== */
+let todayList = [];     // the sets currently shown in Today's Workout (with server IDs)
+let editingId = null;   // the ID of the set open in the edit modal
+
+function todayISO(){
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+// The date the workout box currently represents (= the log date).
+function boxDate(){ return $("logDate").value || todayISO(); }
+// The heading for the workout box: "Today's Workout" or "10 Jul 2026 Workout".
+function boxTitle(iso){
+  if(!iso || iso === todayISO()) return "Today's Workout";
+  const d = new Date(iso + "T12:00:00");
+  return d.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" }) + " Workout";
+}
+
+/* ---- collapsed log-date control ---- */
+$("logDate").value = todayISO();
+updateLogDateLabel();
+$("changeLogDate").addEventListener("click", e => {
+  e.preventDefault();
+  const inp = $("logDate");
+  const showing = inp.style.display !== "none";
+  inp.style.display = showing ? "none" : "block";
+  if(!showing){ inp.focus(); if(inp.showPicker) try{ inp.showPicker(); }catch(_){ } }
+});
+$("logDate").addEventListener("change", () => {
+  updateLogDateLabel();
+  loadDayWorkout();   // retitle + load the selected day's sets
+});
+function updateLogDateLabel(){
+  const v = $("logDate").value, t = todayISO();
+  if(!v || v === t){ $("logDateLabel").textContent = "Today"; }
+  else {
+    const d = new Date(v + "T12:00:00");
+    $("logDateLabel").textContent = d.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" });
+  }
+}
+
+/* Fetch and render the workout box for the currently-selected date. */
+async function loadDayWorkout(){
+  try{
+    const r = await fetch(API_URL + "?workoutDate=" + encodeURIComponent(boxDate()));
+    const j = await r.json();
+    if(j.ok) renderToday(j.dayWorkout || []);
+    else renderToday([]);
+  }catch(err){
+    renderToday([]);   // offline: still show the labelled (empty) box
+  }
+}
+
+/* ---- open the edit modal from a Today's Workout row ---- */
+todayBody.addEventListener("click", e => {
+  const tr = e.target.closest("tr.editable");
+  if(!tr) return;
+  openEditModal(todayList[Number(tr.dataset.idx)]);
+});
+
+function openEditModal(set){
+  if(!set){ return; }
+  if(!set.id){ showToast("This set is still saving — try again in a moment", true); return; }
+  editingId = set.id;
+  $("editExercise").textContent = set.exercise;
+  $("editWeight").value = set.weight;
+  $("editReps").value = set.reps;
+  $("editGroup").value = set.group || "";
+  $("editIntensity").value = set.intensity || "";
+  $("editNotes").value = set.notes || "";
+  $("editDate").value = set.date || todayISO();
+  $("editModal").style.display = "flex";
+}
+function closeEditModal(){ $("editModal").style.display = "none"; editingId = null; }
+
+$("editCancelBtn").addEventListener("click", closeEditModal);
+$("editModal").addEventListener("click", e => { if(e.target.id === "editModal") closeEditModal(); });
+$("editSaveBtn").addEventListener("click", saveEdit);
+$("editDeleteBtn").addEventListener("click", deleteEdit);
+
+async function saveEdit(){
+  if(!editingId) return;
+  const weight = parseFloat($("editWeight").value);
+  const reps = parseInt($("editReps").value, 10);
+  if(isNaN(weight)){ showToast("Enter a weight", true); return; }
+  if(isNaN(reps)){ showToast("Enter reps", true); return; }
+  const btn = $("editSaveBtn"); btn.disabled = true; btn.textContent = "Saving…";
+  try{
+    const r = await fetch(API_URL, { method:"POST", body: JSON.stringify({
+      action:"updateSet", id: editingId,
+      date: $("editDate").value, weight, reps,
+      group: $("editGroup").value, intensity: $("editIntensity").value,
+      notes: $("editNotes").value.trim(), workoutDate: boxDate()
+    })});
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error || "Server error");
+    closeEditModal();
+    showToast("Updated ✓");
+    afterMutation(j);
+  }catch(err){
+    showToast("Update failed: " + err.message, true);
+  }finally{
+    btn.disabled = false; btn.textContent = "Save changes";
+  }
+}
+
+async function deleteEdit(){
+  if(!editingId) return;
+  if(!confirm("Delete this set? This can't be undone.")) return;
+  const btn = $("editDeleteBtn"); btn.disabled = true; btn.textContent = "Deleting…";
+  try{
+    const r = await fetch(API_URL, { method:"POST", body: JSON.stringify({ action:"deleteSet", id: editingId, workoutDate: boxDate() }) });
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error || "Server error");
+    closeEditModal();
+    showToast("Deleted ✓");
+    afterMutation(j);
+  }catch(err){
+    showToast("Delete failed: " + err.message, true);
+  }finally{
+    btn.disabled = false; btn.textContent = "Delete set";
+  }
+}
+
+/* Refresh Today's Workout after an edit/delete, and the visible exercise's cards
+   if they match the set that changed. */
+function afterMutation(j){
+  if(j.groupStatus) renderStatus(j.groupStatus);
+  renderToday(j.dayWorkout || j.todayWorkout);
+  const cur = exInput.value.trim();
+  if(cur && j.exercise && cur === j.exercise){
+    render(j.lastSessions, j.personalBest);
+  }
+}
+</script>
+</body>
+</html>
