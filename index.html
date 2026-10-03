@@ -128,6 +128,7 @@
       <div class="landing-actions">
         <button id="primaryGroupBtn" class="bigbtn">Loading…</button>
         <button id="secondaryGroupBtn" class="bigbtn ghost"></button>
+        <button id="mixedGroupBtn" class="bigbtn ghost" data-group="Mixed Workout">Mixed Workout</button>
       </div>
     </div>
   </div>
@@ -393,6 +394,7 @@ document.addEventListener("click", e => { if(!e.target.closest("#addExWrap")) hi
 // Landing screen buttons
 $("primaryGroupBtn").addEventListener("click", () => enterDashboard($("primaryGroupBtn").dataset.group));
 $("secondaryGroupBtn").addEventListener("click", () => enterDashboard($("secondaryGroupBtn").dataset.group));
+$("mixedGroupBtn").addEventListener("click", () => enterDashboard("Mixed Workout"));
 $("changeGroup").addEventListener("click", e => { e.preventDefault(); backToLanding(); });
 
 loadInit();   // pull group status + exercise list, then show the landing buttons
@@ -416,7 +418,7 @@ function enterDashboard(group){
   $("landing").style.display = "none";
   $("app").style.display = "block";
   populateExercises(orderedGroupList(group));   // group's exercises, synced with the sheet, in order
-  $("group").value = group;                     // pre-tag new sets with the chosen group
+  $("group").value = (group === "Mixed Workout") ? "" : group;   // pre-tag new sets (Mixed: pick A/B per set)
   if(initData){
     if(initData.groupStatus) renderStatus(initData.groupStatus);
     renderToday(initData.todayWorkout);
@@ -429,6 +431,12 @@ function enterDashboard(group){
    - order: the manual guide first (as a hint), then any remaining members alphabetically.
    - source of names: the live Exercises tab, so added/edited exercises persist. */
 function orderedGroupList(group){
+  // Mixed Workout = every Group A exercise, then every Group B exercise not already listed.
+  if(group === "Mixed Workout"){
+    const out = [];
+    [...orderedGroupList("Group A"), ...orderedGroupList("Group B")].forEach(n => { if(!out.includes(n)) out.push(n); });
+    return out;
+  }
   const guide = GROUP_EXERCISES[group] || [];
   if(!allExercises.length) return guide.slice();           // offline fallback
   const inGroup = name => {
@@ -511,7 +519,7 @@ function showAddBox(){
   // Label the first option with the current group, e.g. "Group A only".
   const onlyOpt = $("newExScope").querySelector('option[value="group"]');
   if(onlyOpt) onlyOpt.textContent = (currentGroup || "This group") + " only";
-  $("newExScope").value = "group";
+  $("newExScope").value = (currentGroup === "Mixed Workout") ? "both" : "group";
   $("newExName").focus();
   hideSuggestions();
   renderAddSuggestions();
